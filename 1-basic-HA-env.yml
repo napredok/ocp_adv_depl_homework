@@ -1,0 +1,78 @@
+---
+- name: Get GUID as local variable
+  hosts: localhost
+  tasks:
+    - shell: "hostname | awk -F. '{ print $2 }'"
+      register: varguid
+    - debug: var=varguid.stdout_lines
+
+- name: Replace appearences of GUID in local file
+  hosts: localhost
+  tasks:
+    - replace:
+        path: ./hosts
+        regexp: 'GUID'
+        replace: "{{ varguid.stdout }}"
+        backup: yes 
+
+- name: Copy local hosts file
+  hosts: localhost
+  tasks:
+    - name: copy the hosts file to etc ansible
+      copy:
+        src: ./hosts
+        dest: /etc/ansible/
+        remote_src: no
+        force: yes
+
+- name: Prepare GUID environment variable across all hosts
+  hosts: all,localhost
+  tasks:
+    - name: All GUID env variable
+      shell: export GUID=`hostname | awk -F. '{ print $2 }'`; echo "export GUID=$GUID" >> $HOME/.bashrc
+
+- name: Verify Installation and Configuration of Docker
+  hosts: nodes
+  tasks:
+    - name: docker restart
+      shell: systemctl restart docker
+
+- name: Verify NFS Shared Volumes on Hosts
+  hosts: nfs
+  tasks:
+    - shell: exportfs
+      register: exportfs_result
+    - debug:
+      var: exportfs_result
+      verbosity: 2
+
+- name: Install packages and config auth
+  hosts: localhost
+  tasks:
+    - name: required packages are present
+      yum:
+        name:
+          - atomic-openshift
+          - atomic-openshift-clients
+        state: present
+
+- name: Execute the openshift-ansible prerequisites
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+
+- name: Execute the openshift-ansible Deployer
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
+
+- name: Verify OpenShift Cluster
+  hosts: masters[0]
+  tasks:
+    - name: copy the .kube directory from master1 to your bastion
+      fetch:
+        src: /root/.kube/config
+        dest: /root/.kube/config
+        flat: yes
+
+- name: Post installation configuration
+  hosts: localhost
+  tasks:
+    - name: make sure you are system:dmin
+      shell: oc whoami | grep system:admin

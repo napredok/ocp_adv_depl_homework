@@ -1,0 +1,49 @@
+---
+- name: Creation of users for Alpha and Beta clients - with_list
+  hosts: masters
+  tasks:
+  - name: four users creation
+    shell: "htpasswd -b /etc/origin/master/htpasswd {{ item }} r3dh4t1!;"
+    with_list:
+    - amy
+    - andrew
+    - brian
+    - betty
+
+- name: Assign tenant users to to clients
+  hosts: masters[0]
+  tasks:
+    - shell: oc adm groups new alpha amy andrew
+    - shell: oc adm groups new beta brian betty
+
+- name: Create clusterquota for tenant users
+  hosts: localhost
+  vars:
+    tenants:
+      - amy
+      - andrew
+      - brian
+      - betty
+  tasks:
+    - name: Create single clusterquota per user
+      shell: "oc create clusterquota clusterquota-\"{{ item }}\" --project-annotation-selector=openshift.io/requester=\"{{ item }}\" --hard pods=25 --hard requests.memory=6Gi --hard requests.cpu=5 --hard limits.cpu=25 --hard limits.memory=40Gi --hard configmaps=25 --hard persistentvolumeclaims=25 --hard services=25"
+      with_items: "{{ tenants }}"
+
+- name: Create template
+  hosts: localhost
+  tasks:
+    - shell: "pwd"
+      register: varpwd
+    - shell: "oc create -f {{ varpwd.stdout }}/templates/project_template.yml"
+
+- name: Reconfigure masters project template and restart OpenShift
+  hosts: masters
+  tasks:
+  - name: Reconfigure master config 
+    lineinfile:
+      path: /etc/origin/master/master-config.yaml
+      state: "present"
+      line: "projectRequestTemplate: \"default/project-request\""
+      regexp: "projectRequestTemplate.*"
+  - name: restart OpenShift
+    shell: "systemctl restart atomic-openshift-node"

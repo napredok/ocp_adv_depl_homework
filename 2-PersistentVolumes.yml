@@ -1,0 +1,91 @@
+---
+- name: Create PVs
+  hosts: nfs
+  vars:
+    pv_type_1:
+      quantity: 25
+    pv_type_2:
+      quantity: 25
+  tasks:
+  - name: Create Persistent volumes with_sequence
+    file:
+      path: /srv/nfs/user-vols/pv{{ item }}
+      state: directory
+    with_sequence: start=1 count="{{ pv_type_1.quantity +  pv_type_2.quantity }}" 
+  - name: Add line to file
+    lineinfile:
+      path: /etc/exports.d/openshift-uservols.exports
+      line: "/srv/nfs/user-vols/pv{{ item }} *(rw,root_squash)"
+      create: yes
+    with_sequence: start=1 count="{{ pv_type_1.quantity +  pv_type_2.quantity }}"
+
+- name: Create PVs - set privileges - optimized - out of loop
+  hosts: nfs
+  tasks:
+  - name: Directory Privileges
+    file:
+      path: /srv/nfs
+      owner: nfsnobody
+      group: nfsnobody
+      mode: 0777
+      recurse: yes
+  - name: Restarting NFS Server...
+    shell: systemctl restart nfs-server
+
+- name: Create PVs directory
+  hosts: localhost
+  tasks:
+  - name: mkdir /root/pvs
+    file:
+      path: /root/pvs
+      state: directory
+- name: Get GUID as local variable
+  hosts: localhost
+  tasks:
+    - shell: "hostname | awk -F. '{ print $2 }'"
+      register: varguid
+
+- name: Create all definitions files for PVs 25x5G and 25x10G size
+  hosts: localhost
+  vars:
+    pv_type_1:
+      quantity: 25
+      size: 5Gi
+      access_mode: ReadWriteOnce
+      reclaim_policy: Recycle
+    pv_type_2:
+      quantity: 25
+      size: 10Gi
+      access_mode: ReadWriteMany
+      reclaim_policy: Retain
+  tasks:
+  - name: Create Persistent volumes with_sequence
+    copy:
+      content: "{
+  \"apiVersion\": \"v1\",
+  \"kind\": \"PersistentVolume\",
+  \"metadata\": {
+    \"name\": \"pv{{ item }}\"
+  },
+  \"spec\": {
+    \"capacity\": {
+        \"storage\": \"{{ ( item | int <= pv_type_1.quantity ) | ternary(pv_type_1.size, pv_type_2.size) }}\"
+    },
+    \"accessModes\": [ \"{{ ( item | int <= pv_type_1.quantity ) | ternary(pv_type_1.access_mode,pv_type_2.access_mode) }}\" ],
+    \"nfs\": {
+        \"path\": \"/srv/nfs/user-vols/pv{{ item }}\",
+        \"server\": \"support1.{{ varguid.stdout }}.internal\"
+    },
+    \"persistentVolumeReclaimPolicy\": \"{{ ( item | int <= pv_type_1.quantity ) | ternary(pv_type_1.reclaim_policy,pv_type_2.reclaim_policy)}}\"
+  }
+}"
+      dest: /root/pvs/pv{{ item }}
+    with_sequence: start=1 count="{{ pv_type_1.quantity +  pv_type_2.quantity }}"
+  - name: Restarting NFS Server...
+    shell: systemctl restart nfs-server
+
+- name: Create all PVs from definitions files
+  hosts: localhost
+  tasks:
+  - name: Create 25 definitions files 5G size
+    shell: cat /root/pvs/* | oc create -f -

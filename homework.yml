@@ -1,0 +1,10 @@
+---
+- import_playbook: 1-basic-HA-env.yml
+
+- import_playbook: 2-persistent-volumes.yml
+
+- import_playbook: 3-smoke-test.yml
+
+- import_playbook: 4-cicd.yml
+
+- import_playbook: 5-multitenancy.yml

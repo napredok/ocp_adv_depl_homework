@@ -1,0 +1,24 @@
+---
+- name: Jenkins Setup
+  hosts: localhost
+  tasks:
+    - name: New project CICD - Jenkins
+      shell: oc new-project tasks-build --description='CI/CD Tools Environment' --display-name='CICD - Jenkins'
+    - name: New project Tasks - Development
+      shell: oc new-project tasks-dev --description='Openshift tasks Development' --display-name='Tasks - Development'
+    - name: New project Tasks - Testing
+      shell: oc new-project tasks-test --description='Openshift tasks Testing' --display-name='Tasks - Testing'
+    - name: New project Tasks - Production
+      shell: oc new-project tasks-prod --description='Openshift tasks Production' --display-name='Tasks - Production'
+    - name: New application jenkins-persistent 
+      shell: oc new-app jenkins-persistent --param MEMORY_LIMIT=2Gi --param VOLUME_CAPACITY=4Gi -p ENABLE_OAUTH=false -e JENKINS_PASSWORD=homework -n tasks-build
+    - shell: oc policy add-role-to-user edit system:serviceaccount:tasks-build:jenkins -n tasks-dev
+    - shell: oc policy add-role-to-user edit system:serviceaccount:tasks-build:jenkins -n tasks-test
+    - shell: oc policy add-role-to-user edit system:serviceaccount:tasks-build:jenkins -n tasks-prod
+    - shell: oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-dev -n tasks-build
+    - shell: oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-test -n tasks-build
+    - shell: oc policy add-role-to-group system:image-puller system:serviceaccounts:tasks-prod -n tasks-build
+    - name: create Jenkins CICD Build Configuration 
+      shell: oc create -f ./templates/jenkins_bc.yml -n tasks-build
+    - name: Start CICD build
+      shell: oc start-build cicd-bc -n tasks-build
