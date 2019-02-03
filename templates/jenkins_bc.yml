@@ -34,7 +34,7 @@ items:
                   when {
                     expression {
                       openshift.withCluster() {
-                        openshift.withProject("cicd") {
+                        openshift.withProject("tasks-build") {
                           return !openshift.selector("bc", "tasks-bc").exists();
                         }
                       }
@@ -43,7 +43,7 @@ items:
                   steps {
                     script {
                       openshift.withCluster() {
-                        openshift.withProject("cicd") {
+                        openshift.withProject("tasks-build") {
                           openshift.newBuild("--name=tasks-bc", "--image-stream=jboss-eap70-openshift:1.5", "--binary")
                         }
                       }
@@ -57,7 +57,7 @@ items:
                     sh "cp configuration/*.properties oc-build/configuration"
                     script {
                       openshift.withCluster() {
-                        openshift.withProject("cicd") {
+                        openshift.withProject("tasks-build") {
                           openshift.selector("bc", "tasks-bc").startBuild("--from-file=oc-build", "--wait")
                         }
                       }
@@ -67,7 +67,7 @@ items:
 
                 stage('Promote to DEV') {
                   steps {
-                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "cicd", destinationNamespace: "tasks-build", destStream: 'tasks-bc', destTag: 'dev')
+                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "tasks-build", destinationNamespace: "tasks-build", destStream: 'tasks-bc', destTag: 'dev')
                   }
                 }
                 stage('Create DEV') {
@@ -95,7 +95,7 @@ items:
 
                 stage('Promote to TEST') {
                   steps {
-                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "cicd", destinationNamespace: "tasks-test", destStream: 'tasks-bc', destTag: 'test')
+                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "tasks-build", destinationNamespace: "tasks-test", destStream: 'tasks-bc', destTag: 'test')
                   }
                 }
                 stage('Create TEST') {
@@ -123,7 +123,7 @@ items:
 
                 stage('Promote PROD') {
                   steps {
-                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "cicd", destinationNamespace: "tasks-prod", destStream: 'tasks-bc', destTag: 'prod')
+                    openshiftTag (srcStream: 'tasks-bc', srcTag: 'latest',  namespace: "tasks-build", destinationNamespace: "tasks-prod", destStream: 'tasks-bc', destTag: 'prod')
                   }
                 }
                 stage('Create PROD') {
