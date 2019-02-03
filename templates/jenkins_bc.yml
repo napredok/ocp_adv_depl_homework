@@ -17,7 +17,7 @@ items:
               stages {
                 stage('Checkout Source') {
                   steps {
-                    git branch: 'eap-7', url: 'https://github.com/OpenShiftDemos/openshift-tasks.git'
+                    git branch: 'eap-7', url: 'https://github.com/napredok/openshift-tasks.git'
                   }
                 }
                 stage('Build App') {
