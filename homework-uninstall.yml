@@ -1,15 +1,4 @@
 ---
 - import_playbook: /usr/share/ansible/openshift-ansible/playbooks/adhoc/uninstall.yml
 
-- name: Delete etc origin
-  hosts: nodes 
-  tasks:
-  file:
-    state: absent
-    path: "/etc/origin"
-
-- name: Delete nfs stuff
-  hosts: nfs
-  file:
-    state: absent
-    path: "/srv/nfs/"
+- import_playbook: ./9-clean-up-directories.yml

@@ -1,0 +1,15 @@
+---
+- name: clean up etc origin on nodes
+  hosts: nodes
+  tasks:
+    - shell: "rm -rf /etc/origin" 
+
+- name: clean up srv nfs on support nodes
+  hosts: nfs
+  tasks:
+    - shell: "rm -rf /srv/nfs/*" 
+
+- name: clean up kunernetes dir on localhost
+  hosts: localhost
+  tasks: 
+    - shell: "rm -rf /root/.kube"
