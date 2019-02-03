@@ -42,9 +42,6 @@
   tasks:
     - shell: exportfs
       register: exportfs_result
-    - debug:
-      var: exportfs_result
-      verbosity: 2
 
 - name: Install packages and config auth
   hosts: localhost
