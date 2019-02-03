@@ -13,8 +13,8 @@ The person grading the assignment will
 
 Good luck!
 
+to clone: git clone https://github.com/napredok/ocp_adv_depl_homework.git
 
-to install: ansible-playbook ./ocp_adv_depl_homework/homework.yaml
-
+to install: ansible-playbook ./ocp_adv_depl_homework/homework.yml
 
 to uninstall: ansible-playbook ./ocp_adv_depl_homework/homework-uninstall.yml
