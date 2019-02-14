@@ -12,4 +12,10 @@
 - name: clean up kunernetes dir on localhost
   hosts: localhost
   tasks: 
-    - shell: "rm -rf /root/.kube"
+    - file: 
+        path: "/root/.kube"
+        state: "absent"
+    - file:
+        path: "/root/.kube"
+        state: "directory"
+
