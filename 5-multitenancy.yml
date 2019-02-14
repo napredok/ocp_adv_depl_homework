@@ -1,4 +1,18 @@
 ---
+
+- name: Get GUID as local variable
+  hosts: localhost
+  tasks:
+    - shell: "hostname | awk -F. '{ print $2 }'"
+      register: varguid
+
+- name: Create Alpha, Beta and Common projects
+  hosts: localhost
+  tasks:
+    - shell: "oc new-project common --display-name='Common project'"
+    - shell: "oc new-project alpha --display-name='Alpha Corp'"
+    - shell: "oc new-project beta --display-name='Beta Corp'"
+
 - name: Creation of users for Alpha and Beta clients - with_list
   hosts: masters
   tasks:
@@ -10,11 +24,15 @@
     - brian
     - betty
 
-- name: Assign tenant users to to clients
+- name: Assign tenant users to clients groups and set group labels
   hosts: masters[0]
   tasks:
     - shell: oc adm groups new alpha amy andrew
     - shell: oc adm groups new beta brian betty
+    - shell: oc adm groups new common
+    - shell: oc label group alpha client=alpha
+    - shell: oc label group beta client=beta
+    - shell: oc label group common client=common
 
 - name: Create clusterquota for tenant users
   hosts: localhost
@@ -28,6 +46,12 @@
     - name: Create single clusterquota per user
       shell: "oc create clusterquota clusterquota-\"{{ item }}\" --project-annotation-selector=openshift.io/requester=\"{{ item }}\" --hard pods=25 --hard requests.memory=6Gi --hard requests.cpu=5 --hard limits.cpu=25 --hard limits.memory=40Gi --hard configmaps=25 --hard persistentvolumeclaims=25 --hard services=25"
       with_items: "{{ tenants }}"
+
+- name: Label nodes with appropriate clients zones
+  hosts: localhost
+  tasks:
+    - shell: "oc label node node1.{{ varguid.stdout }}.internal zone=alpha"
+    - shell: "oc label node node2.{{ varguid.stdout }}.internal zone=beta"
 
 - name: Create template
   hosts: localhost
