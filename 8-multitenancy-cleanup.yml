@@ -1,0 +1,27 @@
+---
+
+- name: Get GUID as local variable
+  hosts: localhost
+  tasks:
+    - shell: "hostname | awk -F. '{ print $2 }'"
+      register: varguid
+
+- name: Remove node labels, delete clusterquoutas for amy, andrew, betty, brian
+  hosts: localhost
+  tasks:
+    - shell: "oc label node node1.{{ varguid.stdout }}.internal zone-"
+    - shell: "oc label node node2.{{ varguid.stdout }}.internal zone-"
+    - shell: "oc delete clusterquota clusterquota-amy clusterquota-andrew clusterquota-brian clusterquota-betty"
+
+- name: Remove groups alpha, beta, common
+  hosts: localhost
+  tasks:	
+    - shell: oc delete group.user.openshift.io/alpha
+    - shell: oc delete group.user.openshift.io/beta
+    - shell: oc delete group.user.openshift.io/common
+
+- name: Remove projects alpha, beta, common
+  hosts: localhost
+  tasks:	
+    - shell: oc delete project alpha beta common
+
