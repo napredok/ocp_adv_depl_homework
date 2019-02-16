@@ -33,6 +33,8 @@
     - shell: oc label group alpha client=alpha
     - shell: oc label group beta client=beta
     - shell: oc label group common client=common
+    - shell: oc adm policy add-role-to-group admin alpha -n alpha
+    - shell: oc adm policy add-role-to-group admin beta -n beta
 
 - name: Create clusterquota for tenant users
   hosts: localhost
