@@ -9,7 +9,7 @@
   tasks:
     - shell: "rm -rf /srv/nfs/*" 
 
-- name: clean up kunernetes dir on localhost
+- name: clean up kubernetes dir on localhost
   hosts: localhost
   tasks: 
     - file: 
@@ -17,5 +17,15 @@
         state: "absent"
     - file:
         path: "/root/.kube"
+        state: "directory"
+
+- name: clean up kunernetes dir on localhost
+  hosts: localhost
+  tasks:
+    - file:
+        path: "/root/pvs"
+        state: "absent"
+    - file:
+        path: "/root/pvs"
         state: "directory"
 
